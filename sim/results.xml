@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1777202236" />
+    <testcase name="test_matmul" classname="test_systolic" file="/workspaces/systolic-array-accelerator/sim/test_systolic.py" lineno="26" time="0.019559860229492188" sim_time_ns="390.0" ratio_time="19938.7927840078" />
+  </testsuite>
+</testsuites>
