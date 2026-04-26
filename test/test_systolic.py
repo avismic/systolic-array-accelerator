@@ -7,7 +7,6 @@ import cocotb
 from cocotb.triggers import RisingEdge, Timer, FallingEdge
 from cocotb.clock import Clock
 
-
 # -----------------
 # Helper utilities
 # -----------------
@@ -43,7 +42,7 @@ async def systolic_array_test(dut):
     # -----------------------------------------------------------------
     # 1) Clock & Reset
     # -----------------------------------------------------------------
-    clock = Clock(dut.clk, 10, units="ns")  # 100 MHz clock
+    clock = Clock(dut.clk, 10, unit="ns")  # 100 MHz clock
     cocotb.start_soon(clock.start())
 
     # Ensure dut is in known reset state
@@ -103,11 +102,17 @@ async def systolic_array_test(dut):
 
     # Now capture N*N cycles
     for _ in range(N * N):
-        assert dut.c_valid.value.integer == 1, "c_valid dropped early"
-        c_received.append(dut.c_data.value.integer)
+        assert dut.c_valid.value == 1, "c_valid dropped early"
+        c_received.append(int(dut.c_data.value))
         await RisingEdge(dut.clk)
 
-    # Convert captured list back to matrix form (row‑major)
+    # Convert captured list back to mat
+    # 
+    # 
+    # 
+    # 
+    # 
+    # rix form (row‑major)
     C_hw = np.array(c_received, dtype=np.uint64).reshape(N, N)
 
     dut._log.info("Hardware C:\n%s", C_hw)
@@ -117,7 +122,7 @@ async def systolic_array_test(dut):
     # -----------------------------------------------------------------
     if not np.array_equal(C_hw, C_golden):
         diff = C_hw - C_golden
-        raise TestFailure(
+        assert np.array_equal(C_hw, C_golden), (
             f"Matrix multiplication mismatch!\n"
             f"Golden:\n{C_golden}\nHW:\n{C_hw}\nDiff:\n{diff}"
         )

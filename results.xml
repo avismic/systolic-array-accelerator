@@ -1,8 +1,8 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
-    <property name="random_seed" value="1777185625" />
-    <testcase name="systolic_array_test" classname="test_systolic" file="/workspaces/systolic-array-accelerator/test/test_systolic.py" lineno="30" time="0.08255529403686523" sim_time_ns="210.0" ratio_time="2543.7496462216473">
-      <failure error_type="AttributeError" error_msg="'Logic' object has no attribute 'integer'" />
+    <property name="random_seed" value="1777186391" />
+    <testcase name="systolic_array_test" classname="test_systolic" file="/workspaces/systolic-array-accelerator/test/test_systolic.py" lineno="29" time="0.037007808685302734" sim_time_ns="210.0" ratio_time="5674.478102330855">
+      <failure error_type="ValueError" error_msg="Can't convert LogicArray to int: it contains non-0/1 values" />
     </testcase>
   </testsuite>
 </testsuites>
