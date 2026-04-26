@@ -1,8 +1,8 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
-    <property name="random_seed" value="1777186391" />
-    <testcase name="systolic_array_test" classname="test_systolic" file="/workspaces/systolic-array-accelerator/test/test_systolic.py" lineno="29" time="0.037007808685302734" sim_time_ns="210.0" ratio_time="5674.478102330855">
-      <failure error_type="ValueError" error_msg="Can't convert LogicArray to int: it contains non-0/1 values" />
+    <property name="random_seed" value="1777200173" />
+    <testcase name="systolic_array_test" classname="test_systolic" file="/workspaces/systolic-array-accelerator/test/test_systolic.py" lineno="28" time="0.03769183158874512" sim_time_ns="480.0" ratio_time="12734.854735563695">
+      <failure error_type="AssertionError" error_msg="Matrix multiplication mismatch!&#10;Golden:&#10;[[ 29569  76746  56356  60238]&#10; [ 23689  56121  49081  38788]&#10; [ 25761  63320  46108  49663]&#10; [ 35405 102729  68397  45816]]&#10;HW:&#10;[[0 0 0 0]&#10; [0 0 0 0]&#10; [0 0 0 0]&#10; [0 0 0 0]]&#10;Diff:&#10;[[18446744073709522047 18446744073709474870 18446744073709495260&#10;  18446744073709491378]&#10; [18446744073709527927 18446744073709495495 18446744073709502535&#10;  18446744073709512828]&#10; [18446744073709525855 18446744073709488296 18446744073709505508&#10;  18446744073709501953]&#10; [18446744073709516211 18446744073709448887 18446744073709483219&#10;  18446744073709505800]]" />
     </testcase>
   </testsuite>
 </testsuites>

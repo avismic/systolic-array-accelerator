@@ -3,85 +3,91 @@
 // ---------------------------------------------------
 `default_nettype none
 module systolic_array #(
-    parameter int N          = 4,   // Grid size (rows = columns)
+    parameter int N          = 4,
     parameter int DATA_WIDTH = 8,
     parameter int ACC_WIDTH  = 32
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
-    // Input streams after skewing
-    input  wire [N*DATA_WIDTH-1:0]  a_row_in,   // Concatenated: a[0]..a[N-1] for a given row
-    input  wire [N*DATA_WIDTH-1:0]  b_col_in,   // Concatenated: b[0]..b[N-1] for a given column
-    // Output accumulators (matrix C) – flattened row‑major
+    // ONE flattened vector per whole row   (N rows × N elements)
+    input  wire [N*N*DATA_WIDTH-1:0] a_row_flat,
+    // ONE flattened vector per whole column (N cols × N elements)
+    input  wire [N*N*DATA_WIDTH-1:0] b_col_flat,
+    // Flattened row‑major result matrix C
     output wire [N*N*ACC_WIDTH-1:0] c_out
 );
-    // -------------------------------------------------
-    // Unpack the vectorised inputs into per‑PE wires
-    // -------------------------------------------------
-    wire [DATA_WIDTH-1:0] a_in_matrix [0:N-1][0:N-1];
-    wire [DATA_WIDTH-1:0] b_in_matrix [0:N-1][0:N-1];
-    wire [ACC_WIDTH-1:0]  acc_matrix   [0:N-1][0:N-1];
-    wire [DATA_WIDTH-1:0] a_fwd_matrix [0:N-1][0:N-1];
-    wire [DATA_WIDTH-1:0] b_fwd_matrix [0:N-1][0:N-1];
+    // -----------------------------------------------------------------
+    // Unpack the flattened inputs into per‑PE wires
+    // -----------------------------------------------------------------
+    // a_src[i][j] = a_row_flat[(i*N + j)*DATA_WIDTH +: DATA_WIDTH]
+    // b_src[i][j] = b_col_flat[(j*N + i)*DATA_WIDTH +: DATA_WIDTH]
+    // (notice the transpose for the column input)
+    // -----------------------------------------------------------------
+    wire [DATA_WIDTH-1:0] a_src [0:N-1][0:N-1];
+    wire [DATA_WIDTH-1:0] b_src [0:N-1][0:N-1];
 
-    // ----------------------------------------------------------------
-    // Generate the grid of PEs
-    // ----------------------------------------------------------------
     genvar i,j;
+    generate
+        for (i=0; i<N; i=i+1) begin : unpack_row
+            for (j=0; j<N; j=j+1) begin : unpack_col
+                localparam int A_IDX = (i*N + j) * DATA_WIDTH;
+                localparam int B_IDX = (j*N + i) * DATA_WIDTH;
+                assign a_src[i][j] = a_row_flat[A_IDX +: DATA_WIDTH];
+                assign b_src[i][j] = b_col_flat[B_IDX +: DATA_WIDTH];
+            end
+        end
+    endgenerate
+
+    // -----------------------------------------------------------------
+    // Forwarding wires (values that move to the next PE each cycle)
+    // -----------------------------------------------------------------
+    wire [DATA_WIDTH-1:0] a_fwd [0:N-1][0:N-1];
+    wire [DATA_WIDTH-1:0] b_fwd [0:N-1][0:N-1];
+    wire [ACC_WIDTH-1:0]  acc   [0:N-1][0:N-1];
+
+    // -----------------------------------------------------------------
+    // Generate the grid of PEs
+    // -----------------------------------------------------------------
     generate
         for (i=0; i<N; i=i+1) begin : row
             for (j=0; j<N; j=j+1) begin : col
-                // Inputs to each PE:
-                //  – a comes from either the global a_row_in (first column) or left neighbor's a_out
-                //  – b comes from either the global b_col_in (first row) or top neighbor's b_out
-                localparam int PE_IDX   = i*N + j;
+                // For the left‑most column the A input comes directly from a_src,
+                // otherwise it comes from the neighbour on the left.
+                wire [DATA_WIDTH-1:0] a_input;
+                if (j == 0) assign a_input = a_src[i][j];
+                else        assign a_input = a_fwd[i][j-1];
 
-                // Determine source of 'A' for this PE
-                wire [DATA_WIDTH-1:0] a_src;
-                if (j == 0) begin
-                    // First column – connect directly to row skew output (a_row_in)
-                    assign a_src = a_row_in[ DATA_WIDTH*(i+1)-1 -: DATA_WIDTH ];
-                end else begin
-                    // Take from left neighbor's forward output
-                    assign a_src = a_fwd_matrix[i][j-1];
-                end
+                // For the top‑most row the B input comes directly from b_src,
+                // otherwise it comes from the neighbour above.
+                wire [DATA_WIDTH-1:0] b_input;
+                if (i == 0) assign b_input = b_src[i][j];
+                else        assign b_input = b_fwd[i-1][j];
 
-                // Determine source of 'B' for this PE
-                wire [DATA_WIDTH-1:0] b_src;
-                if (i == 0) begin
-                    // First row – connect directly to column skew output (b_col_in)
-                    assign b_src = b_col_in[ DATA_WIDTH*(j+1)-1 -: DATA_WIDTH ];
-                end else begin
-                    // Take from top neighbor's forward output
-                    assign b_src = b_fwd_matrix[i-1][j];
-                end
-
-                // Instantiate the PE
                 pe #(
                     .DATA_WIDTH(DATA_WIDTH),
                     .ACC_WIDTH (ACC_WIDTH)
                 ) u_pe (
-                    .clk      (clk),
-                    .rst_n    (rst_n),
-                    .en       (1'b1),
-                    .a_in     (a_src),
-                    .b_in     (b_src),
-                    .a_out    (a_fwd_matrix[i][j]),
-                    .b_out    (b_fwd_matrix[i][j]),
-                    .acc_out  (acc_matrix[i][j])
+                    .clk     (clk),
+                    .rst_n   (rst_n),
+                    .en      (1'b1),
+                    .a_in    (a_input),
+                    .b_in    (b_input),
+                    .a_out   (a_fwd[i][j]),
+                    .b_out   (b_fwd[i][j]),
+                    .acc_out (acc[i][j])
                 );
             end
         end
     endgenerate
 
-    // ----------------------------------------------------------------
-    // Pack the accumulator results into a single flattened vector
-    // ----------------------------------------------------------------
+    // -----------------------------------------------------------------
+    // Pack the accumulator matrix into the single flattened output
+    // -----------------------------------------------------------------
     generate
         for (i=0; i<N; i=i+1) begin : pack_rows
             for (j=0; j<N; j=j+1) begin : pack_cols
                 localparam int IDX = (i*N + j) * ACC_WIDTH;
-                assign c_out[IDX +: ACC_WIDTH] = acc_matrix[i][j];
+                assign c_out[IDX +: ACC_WIDTH] = acc[i][j];
             end
         end
     endgenerate
