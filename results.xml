@@ -1,0 +1,8 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1777185625" />
+    <testcase name="systolic_array_test" classname="test_systolic" file="/workspaces/systolic-array-accelerator/test/test_systolic.py" lineno="30" time="0.08255529403686523" sim_time_ns="210.0" ratio_time="2543.7496462216473">
+      <failure error_type="AttributeError" error_msg="'Logic' object has no attribute 'integer'" />
+    </testcase>
+  </testsuite>
+</testsuites>

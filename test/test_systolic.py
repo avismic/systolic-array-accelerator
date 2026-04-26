@@ -6,7 +6,6 @@ import numpy as np
 import cocotb
 from cocotb.triggers import RisingEdge, Timer, FallingEdge
 from cocotb.clock import Clock
-from cocotb.result import TestFailure
 
 
 # -----------------
@@ -99,7 +98,7 @@ async def systolic_array_test(dut):
     c_received = []
     expected_latency = 3 * N - 2
     # Wait until first c_valid (skip idle cycles)
-    while dut.c_valid.value.integer == 0:
+    while dut.c_valid.value == 0:
         await RisingEdge(dut.clk)
 
     # Now capture N*N cycles

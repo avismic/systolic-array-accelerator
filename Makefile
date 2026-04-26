@@ -1,26 +1,27 @@
-# -------------------------------------------------
-# Makefile – run the cocotb testbench
-# -------------------------------------------------
-# 1) Tell cocotb what language we are using
-TOPLEVEL_LANG ?= verilog            # SystemVerilog is accepted via -g2005-sv
+# Makefile for Systolic Array Simulation
 
-# 2) Source files – everything under src/
-VERILOG_SOURCES = $(shell find src -name "*.sv")
+# Simulator to use
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
 
-# 3) Top‑level module of the design
+# Design Sources
+VERILOG_SOURCES += $(PWD)/src/pe.sv
+VERILOG_SOURCES += $(PWD)/src/skew_buffer.sv
+VERILOG_SOURCES += $(PWD)/src/systolic_array.sv
+VERILOG_SOURCES += $(PWD)/src/top.sv
+
+# Top-level module name (in your Verilog)
 TOPLEVEL = top
 
-# 4) Python testbench module (filename = test_systolic.py)
-MODULE = test_systolic
+# --- PATH FIXES ---
+# 1. Fix for 'pygpi' error: Explicitly add site-packages to PYTHONPATH
+export PYTHONPATH := $(shell python3 -c "import site; print(site.getsitepackages()[0])"):$(PYTHONPATH)
 
-# 5) Simulator (icarus works for SystemVerilog)
-SIM ?= icarus
+# 2. Fix for Test Location: Add the 'test' directory to the path so cocotb finds your script
+export PYTHONPATH := $(PWD)/test:$(PYTHONPATH)
 
-# OPTIONAL – keep a full VCD (helpful for debugging)
-# export COCOTB_REDUCE_DUMP=0   # uncomment if you want every signal
+# Python test module name (the name of your .py file without the extension)
+COCOTB_TEST_MODULES = test_systolic
 
-# -------------------------------------------------
-# Pull in the generic cocotb makefile that defines the
-#   <module>   target, clean, etc.
-# -------------------------------------------------
+# Include cocotb's simulation logic
 include $(shell cocotb-config --makefiles)/Makefile.sim
